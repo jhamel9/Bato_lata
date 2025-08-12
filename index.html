@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Bato Lata</title>
+    <title>Bato Lata1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
@@ -553,10 +553,10 @@
     window.addEventListener('keydown', (e)=>{
         if(state.isGameOver || state.isPaused) return; // Prevent input if game over or paused
         const key = e.key.toLowerCase();
-        if(key==='w' || key==='arrowup') { keys.up=true; player.dir = 1; player.moving=true; }
-        else if(key==='s' || key==='arrowdown'){ keys.down=true; player.dir = 0; player.moving=true; }
-        else if(key==='a' || key==='arrowleft'){ keys.left=true; player.dir = 2; player.moving=true; }
-        else if(key==='d' || key==='arrowright'){ keys.right=true; player.dir = 3; player.moving=true; }
+        if(key==='w' || key==='arrowup') { keys.up=true; }
+        else if(key==='s' || key==='arrowdown'){ keys.down=true; }
+        else if(key==='a' || key==='arrowleft'){ keys.left=true; }
+        else if(key==='d' || key==='arrowright'){ keys.right=true; }
         else if(key===' '){
             if(!keys.space && slipper.isHeld && !slipper.justThrown && player.y >= config.boundaryY){
                 keys.space = true; throwSlipperTowardCan();
@@ -576,13 +576,7 @@
         else if(key==='a' || key==='arrowleft') keys.left=false;
         else if(key==='d' || key==='arrowright') keys.right=false;
         else if(key===' ') { keys.space=false; }
-
-        player.moving = keys.up||keys.down||keys.left||keys.right;
-        if(!player.moving) player.currFrame = 1;
-        // Update facing if still moving
-        if(player.moving){
-            if(keys.left) player.dir = 2; else if(keys.right) player.dir = 3; else if(keys.up) player.dir = 1; else if(keys.down) player.dir = 0;
-        }
+        // player.moving and player.dir are now handled by updatePlayerStateFromKeys
     });
 
     // Mobile Joystick Logic
@@ -607,10 +601,11 @@
         state.joystickCurrentX = 0;
         state.joystickCurrentY = 0;
         joystickThumb.style.transform = 'translate(-50%, -50%)'; // Reset thumb position
-        // Reset player movement state for keyboard keys too
-        keys.up = keys.down = keys.left = keys.right = false;
-        player.moving = false;
-        player.currFrame = 1;
+        // Explicitly reset all keys when joystick is released
+        keys.up = false;
+        keys.down = false;
+        keys.left = false;
+        keys.right = false;
     });
 
     function handleJoystickMove(touchX, touchY) {
@@ -629,25 +624,19 @@
         // Move the joystick thumb visually
         joystickThumb.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
 
-        // Translate joystick movement to keys state based on direction
-        keys.up = dy < -config.joystickDeadzone;
-        keys.down = dy > config.joystickDeadzone;
-        keys.left = dx < -config.joystickDeadzone;
-        keys.right = dx > config.joystickDeadzone;
-
-        // Determine player movement and direction based on joystick displacement
+        // Translate joystick movement to keys state based on direction and deadzone
         if (distance > config.joystickDeadzone) {
-            player.moving = true;
-            if (Math.abs(dx) > Math.abs(dy)) {
-                player.dir = dx > 0 ? 3 : 2; // Right or Left
-            } else {
-                player.dir = dy > 0 ? 0 : 1; // Down or Up
-            }
+            // Only set keys if outside deadzone
+            keys.up = dy < -config.joystickDeadzone;
+            keys.down = dy > config.joystickDeadzone;
+            keys.left = dx < -config.joystickDeadzone;
+            keys.right = dx > config.joystickDeadzone;
         } else {
-            player.moving = false;
-            player.currFrame = 1; // Stop animation
-            // Also ensure keys are reset if not moving significantly
-            keys.up = keys.down = keys.left = keys.right = false;
+            // Reset keys if inside deadzone (no significant movement)
+            keys.up = false;
+            keys.down = false;
+            keys.left = false;
+            keys.right = false;
         }
     }
 
@@ -708,8 +697,30 @@
     // =====================
     // Update split into smaller functions
     // =====================
+    // NEW: Function to update player state (moving, direction, animation) based on keys
+    function updatePlayerStateFromKeys() {
+        player.moving = keys.up || keys.down || keys.left || keys.right;
+
+        if (player.moving) {
+            // Determine primary direction for animation
+            if (keys.left) player.dir = 2;
+            else if (keys.right) player.dir = 3;
+            else if (keys.up) player.dir = 1;
+            else if (keys.down) player.dir = 0;
+
+            // Update animation frame
+            player.frameCounter++;
+            if (player.frameCounter % 10 === 0) {
+                player.currFrame = (player.currFrame + 1) % playerColumns;
+            }
+        } else {
+            player.currFrame = 1; // Default frame when idle
+            player.frameCounter = 0; // Reset frame counter when idle
+        }
+    }
+
     function updatePlayerMovement(){
-        if(player.moving){
+        if(player.moving){ // player.moving is now set by updatePlayerStateFromKeys
             let vx=0, vy=0;
             if(keys.up) vy -=1;
             if(keys.down) vy +=1;
@@ -721,10 +732,6 @@
         // keep inside
         player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
         player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
-
-        // animation
-        if(player.moving){ player.frameCounter++; if(player.frameCounter%10===0){ player.currFrame = (player.currFrame+1) % playerColumns; } }
-        else player.currFrame = 1;
     }
 
     function updateSlipper(){
@@ -978,6 +985,7 @@
 
         applyShake();
 
+        updatePlayerStateFromKeys(); // NEW: Update player moving/dir/animation based on keys
         updatePlayerMovement();
         updateSlipper();
         updateCanPhysics();
