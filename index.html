@@ -522,6 +522,9 @@
     // =====================
     // Helpers
     // =====================
+    // Math.clamp helper function
+    Math.clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
     function showMessage(html, duration=180){
         messageBox.innerHTML = html;
         messageBox.style.display = 'block';
@@ -576,38 +579,9 @@
         else if(key==='a' || key==='arrowleft') keys.left=false;
         else if(key==='d' || key==='arrowright') keys.right=false;
         else if(key===' ') { keys.space=false; }
-        // player.moving and player.dir are now handled by updatePlayerStateFromKeys
     });
 
     // Mobile Joystick Logic
-    joystickArea.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevent default touch behavior (scrolling, zooming)
-        state.joystickActive = true;
-        const rect = joystickArea.getBoundingClientRect();
-        state.joystickStartX = rect.left + rect.width / 2;
-        state.joystickStartY = rect.top + rect.height / 2;
-        handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
-    });
-
-    joystickArea.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (state.joystickActive) {
-            handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
-        }
-    });
-
-    joystickArea.addEventListener('touchend', () => {
-        state.joystickActive = false;
-        state.joystickCurrentX = 0;
-        state.joystickCurrentY = 0;
-        joystickThumb.style.transform = 'translate(-50%, -50%)'; // Reset thumb position
-        // Explicitly reset all keys when joystick is released
-        keys.up = false;
-        keys.down = false;
-        keys.left = false;
-        keys.right = false;
-    });
-
     function handleJoystickMove(touchX, touchY) {
         let dx = touchX - state.joystickStartX;
         let dy = touchY - state.joystickStartY;
@@ -623,37 +597,66 @@
 
         // Move the joystick thumb visually
         joystickThumb.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
+    }
 
-        // Translate joystick movement to keys state based on direction and deadzone
-        if (distance > config.joystickDeadzone) {
-            // Only set keys if outside deadzone
-            keys.up = dy < -config.joystickDeadzone;
-            keys.down = dy > config.joystickDeadzone;
-            keys.left = dx < -config.joystickDeadzone;
-            keys.right = dx > config.joystickDeadzone;
-        } else {
-            // Reset keys if inside deadzone (no significant movement)
+    // Enhanced throw button handling
+    function handleThrow(e) {
+        e.preventDefault();
+        // Only allow throw if not paused/game over, slipper is held, not just thrown, AND player is in safe zone
+        if (!state.isPaused && !state.isGameOver && slipper.isHeld && !slipper.justThrown && player.y >= config.boundaryY) {
+            throwSlipperTowardCan();
+        }
+        return false; // Prevent default behavior and propagation
+    }
+
+    // Mobile detection and control setup
+    function setupMobileControls() {
+        // Improved joystick events
+        joystickArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            state.joystickActive = true;
+            const rect = joystickArea.getBoundingClientRect();
+            state.joystickStartX = rect.left + rect.width / 2;
+            state.joystickStartY = rect.top + rect.height / 2;
+            handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+        });
+
+        joystickArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (state.joystickActive) {
+                handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        });
+
+        joystickArea.addEventListener('touchend', () => {
+            state.joystickActive = false;
+            state.joystickCurrentX = 0;
+            state.joystickCurrentY = 0;
+            joystickThumb.style.transform = 'translate(-50%, -50%)'; // Reset thumb position
+            // Explicitly reset all keys when joystick is released
             keys.up = false;
             keys.down = false;
             keys.left = false;
             keys.right = false;
-        }
+        });
+
+        // Add touchstart and click event for throw button
+        mobileThrowBtn.addEventListener('touchstart', handleThrow);
+        mobileThrowBtn.addEventListener('click', handleThrow); // Fallback for some environments
+
+        // Prevent document-level scrolling when interacting with controls
+        document.addEventListener('touchmove', (e) => {
+            if (state.joystickActive || e.target === mobileThrowBtn) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     }
-
-
-    // Mobile Throw Button Logic
-    mobileThrowBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (!state.isPaused && !state.isGameOver && slipper.isHeld && !slipper.justThrown && player.y >= config.boundaryY) {
-            throwSlipperTowardCan();
-        }
-    });
 
     // Start button
     startBtn.addEventListener('click', ()=>{
         startOverlay.style.display='none';
+        state.isPaused = false; // <<< IMPORTANT: Unpause the game when starting
         // Only show mobile controls if on a mobile device (or small screen based on media query)
-        // Check if the current window matches the mobile breakpoint for display
         if (window.matchMedia("(max-width: 768px)").matches) {
             mobileControlsContainer.style.display = 'block';
         }
@@ -697,17 +700,28 @@
     // =====================
     // Update split into smaller functions
     // =====================
-    // NEW: Function to update player state (moving, direction, animation) based on keys
-    function updatePlayerStateFromKeys() {
-        player.moving = keys.up || keys.down || keys.left || keys.right;
+    // Updated player movement to include joystick input
+    function updatePlayerMovement() {
+        // Combine keyboard and joystick inputs to determine desired velocity components
+        const desiredVx = (keys.left || state.joystickCurrentX < -config.joystickDeadzone) ? -1 : 
+                   (keys.right || state.joystickCurrentX > config.joystickDeadzone) ? 1 : 0;
+        const desiredVy = (keys.up || state.joystickCurrentY < -config.joystickDeadzone) ? -1 : 
+                   (keys.down || state.joystickCurrentY > config.joystickDeadzone) ? 1 : 0;
+
+        // Determine if player is actively moving based on combined inputs
+        player.moving = (desiredVx !== 0 || desiredVy !== 0);
 
         if (player.moving) {
+            const mag = Math.hypot(desiredVx, desiredVy);
+            player.x += (desiredVx / mag) * config.playerSpeed;
+            player.y += (desiredVy / mag) * config.playerSpeed;
+            
             // Determine primary direction for animation
-            if (keys.left) player.dir = 2;
-            else if (keys.right) player.dir = 3;
-            else if (keys.up) player.dir = 1;
-            else if (keys.down) player.dir = 0;
-
+            if (Math.abs(desiredVx) > Math.abs(desiredVy)) {
+                player.dir = desiredVx > 0 ? 3 : 2; // Right or Left
+            } else {
+                player.dir = desiredVy > 0 ? 0 : 1; // Down or Up
+            }
             // Update animation frame
             player.frameCounter++;
             if (player.frameCounter % 10 === 0) {
@@ -717,22 +731,12 @@
             player.currFrame = 1; // Default frame when idle
             player.frameCounter = 0; // Reset frame counter when idle
         }
+
+        // Boundary checks
+        player.x = Math.clamp(player.x, player.width/2, canvas.width - player.width/2);
+        player.y = Math.clamp(player.y, player.height/2, canvas.height - player.height/2);
     }
 
-    function updatePlayerMovement(){
-        if(player.moving){ // player.moving is now set by updatePlayerStateFromKeys
-            let vx=0, vy=0;
-            if(keys.up) vy -=1;
-            if(keys.down) vy +=1;
-            if(keys.left) vx -=1;
-            if(keys.right) vx +=1;
-            const mag = Math.hypot(vx,vy);
-            if(mag>0){ player.x += (vx/mag)*config.playerSpeed; player.y += (vy/mag)*config.playerSpeed; }
-        }
-        // keep inside
-        player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
-        player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
-    }
 
     function updateSlipper(){
         if(slipper.throwCooldown>0) slipper.throwCooldown--;
@@ -747,7 +751,7 @@
 
             // wall bounce
             if(slipper.x - slipper.size/2 < 0 || slipper.x + slipper.size/2 > canvas.width){ slipper.vx *= -0.7; slipper.x = Math.max(slipper.size/2, Math.min(canvas.width - slipper.size/2, slipper.x)); }
-            if(slipper.y - slipper.size/2 < 0 || slipper.y + slipper.size/2 > canvas.height){ slipper.vy *= -0.7; slipper.y = Math.max(slipper.size/2, Math.min(canvas.height - slipper.size/2, slipper.y)); }
+            if(slipper.y - slipper.size/2 < 0 || slipper.y + slipper.size/2 > canvas.height){ slipper.vy *= -0.7; slipper.y = Math.max(slipper.size/2, Math.min(canvas.height - slipper.size/2, canvas.height)); }
 
             // collision with can
             const dx = slipper.x - can.x; const dy = slipper.y - can.y; const dist = Math.hypot(dx,dy);
@@ -783,7 +787,7 @@
             can.x += can.vx; can.y += can.vy; can.rotation += can.rotationSpeed;
             can.vx *= 0.95; can.vy *= 0.95; can.rotationSpeed *= 0.95;
             if(can.x - can.size/2 < 0 || can.x + can.size/2 > canvas.width){ can.vx *= -0.5; can.x = Math.max(can.size/2, Math.min(canvas.width - can.size/2, can.x)); }
-            if(can.y - can.size/2 < 0 || can.y + can.size/2 > canvas.height){ can.vy *= -0.5; can.y = Math.max(can.size/2, Math.min(canvas.height - can.size/2, can.y)); }
+            if(can.y - can.size/2 < 0 || can.y + can.size/2 > canvas.height){ can.vy *= -0.5; can.y = Math.max(can.size/2, Math.min(canvas.height - can.size/2, canvas.height)); }
             if(Math.abs(can.vx)<0.1 && Math.abs(can.vy)<0.1 && Math.abs(can.rotationSpeed)<0.01){ can.vx=0; can.vy=0; can.rotationSpeed=0; }
         }
 
@@ -985,7 +989,6 @@
 
         applyShake();
 
-        updatePlayerStateFromKeys(); // NEW: Update player moving/dir/animation based on keys
         updatePlayerMovement();
         updateSlipper();
         updateCanPhysics();
@@ -1127,7 +1130,8 @@
 
     function resetGame(){
         state.isGameOver=false;
-        state.isPaused=true; // Game is paused on the start screen
+        // IMPORTANT: Game starts UNPAUSED, but gameplay is blocked by startOverlay
+        state.isPaused=false; 
         state.score=0;
         scoreValueElement.textContent = 0;
         hideMessage(); // Hide game over message if visible
@@ -1153,7 +1157,8 @@
         startOverlay.style.display='flex'; // Show start overlay
         mobileControlsContainer.style.display = 'none'; // Hide mobile controls
 
-        // Stop the game loop (if running)
+        // Stop the game loop (if running) - this needs to be called after setting state.isPaused to false
+        // otherwise it will remain paused
         if(loopId) cancelAnimationFrame(loopId);
         loopId = null; // Ensure loopId is nullified
     }
@@ -1180,8 +1185,13 @@
 
     // Initial setup when the page loads
     window.addEventListener('load', () => {
-        // Ensure game starts paused with the start overlay visible and controls hidden
-        resetGame(); // This will set isPaused=true, show startOverlay, hide mobileControls
+        // Initialize mobile controls if on mobile
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile || window.innerWidth <= 768) {
+            setupMobileControls();
+        }
+        // Ensure game starts in a ready state with start overlay visible
+        resetGame(); 
     });
 
     // Utility: attach play again button listener if present after message show
