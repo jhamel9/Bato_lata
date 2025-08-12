@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Bato Lata — Refactor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -22,61 +22,67 @@
             display:flex;
             align-items:center;
             justify-content:center;
+            overflow: hidden; /* Prevent scrolling on mobile */
         }
-
+        
         #help-icon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 32px;
-    height: 32px;
-    /* Using an inline SVG for the help icon */
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.43 12.92 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.35 1.7-.92 2.25z"/></svg>') no-repeat center/cover;
-    cursor: pointer;
-    filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.5)); /* Added subtle shadow */
-  }
-  #help-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85);
-    color: white;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    box-sizing: border-box;
-    z-index: 200; /* Ensure it's above other elements */
-  }
-  #help-content {
-    max-width: 500px;
-    text-align: center;
-    background: var(--panel);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  }
-  #help-overlay button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    background: #3498db;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  #help-overlay button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-  }
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            /* Using an inline SVG for the help icon */
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.43 12.92 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.35 1.7-.92 2.25z"/></svg>') no-repeat center/cover;
+            cursor: pointer;
+            filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.5)); /* Added subtle shadow */
+            z-index: 150; /* Ensure it's above other game elements but below overlays */
+        }
+        #help-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 200; /* Ensure it's above other elements */
+        }
+        #help-content {
+            max-width: 500px;
+            text-align: center;
+            background: var(--panel);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+        }
+        #help-overlay button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: #3498db;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        #help-overlay button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
         .game-wrap{
             position:relative;
             display:flex;
             flex-direction:column;
             align-items:center;
+            width: 100%; /* Make game-wrap responsive */
+            max-width: 500px; /* Constrain max width for desktop */
+            height: 100%; /* Make game-wrap responsive */
+            max-height: 650px; /* Constrain max height for desktop */
         }
         h1{
             margin:12px 0 0 0;
@@ -88,8 +94,10 @@
             border:4px solid var(--accent);
             border-radius:12px;
             box-shadow:0 8px 24px rgba(0,0,0,0.6);
-            /* Background is now handled by the JS code */
             margin:16px 0;
+            width: 100%; /* Canvas takes full width of its container */
+            height: auto; /* Maintain aspect ratio */
+            flex-grow: 1; /* Allow canvas to grow */
         }
         .score-board{
             position:absolute;
@@ -102,6 +110,7 @@
             border-radius:8px;
             backdrop-filter: blur(4px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.4); /* Added shadow */
+            z-index: 10; /* Ensure score is above canvas */
         }
         .message-box{
             position:absolute;
@@ -112,9 +121,10 @@
             color:#fff;
             padding:24px 28px;
             border-radius:12px;
+            border: 3px solid white; /* Added white border */
             box-shadow:0 6px 20px rgba(0,0,0,0.5);
             text-align:center;
-            font-size:1rem;
+            font-size:1.5rem; /* Increased general font size for message box */
             display:none;
             z-index:100;
         }
@@ -201,59 +211,127 @@
             transform: translateY(-2px); /* Lift effect on hover */
             box-shadow: 0 6px 12px rgba(0,0,0,0.4); /* Enhanced shadow on hover */
         }
-        /* mobile controls (simple) */
-        .mobile-controls{
-            display:none;
-            position:absolute;
-            bottom:12px;
-            left:50%;
-            transform:translateX(-50%);
-            gap:10px;
-            z-index:140;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 90%;
+
+        /* Mobile Controls - Fullscreen, Joystick, Throw Button */
+        .mobile-controls-container {
+            display: none; /* Hidden by default, shown on mobile */
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            height: 120px; /* Area for controls */
+            z-index: 150;
         }
-        .touch-btn{
-            width:56px;
-            height:56px;
-            border-radius:8px;
-            background:rgba(255,255,255,0.06);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-weight:700;
-            font-size: 1.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            transition: transform 0.1s ease;
-            user-select: none;
+
+        .joystick-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100px; /* Size of the joystick area */
+            height: 100px;
+            background: rgba(128, 128, 128, 0.2); /* Semi-transparent gray */
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.4); /* Semi-transparent white border */
         }
-        .touch-btn:active {
-            transform: scale(0.95);
+
+        .joystick-thumb {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.6); /* White, more opaque thumb */
+            border-radius: 50%;
+            pointer-events: none; /* Allow events to pass to the parent joystick-area */
         }
-        /* Adjust layout for mobile controls */
-        .mobile-controls > div {
+
+        #mobile-throw-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: rgba(128, 128, 128, 0.4); /* Semi-transparent gray */
+            border-radius: 50%;
             display: flex;
-            gap: 6px;
             align-items: center;
             justify-content: center;
-            width: 100%;
+            font-size: 2.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            user-select: none;
+            cursor: pointer;
+            transition: background 0.1s ease;
         }
-        @media (max-width:720px){
-            .mobile-controls{display:flex}
+        #mobile-throw-btn:active {
+            background: rgba(128, 128, 128, 0.6);
+            transform: scale(0.95);
+        }
+
+        #fullscreen-btn {
+            display: none; /* Hidden by default, shown on mobile */
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(52, 152, 219, 0.8); /* Blue, semi-transparent */
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9em;
+            cursor: pointer;
+            z-index: 150;
+            transition: background 0.2s ease;
+        }
+        #fullscreen-btn:hover {
+            background: rgba(52, 152, 219, 1);
+        }
+
+        /* Media queries for mobile display */
+        @media (max-width: 768px) {
             .game-wrap {
-                transform: scale(0.9);
+                width: 100vw; /* Take full viewport width */
+                height: 100vh; /* Take full viewport height */
+                border-radius: 0; /* No border radius in full screen */
+                margin: 0;
             }
-        }
-        @media (max-width:480px) {
-            .game-wrap {
-                transform: scale(0.8);
+            canvas {
+                border-radius: 0; /* No border radius for canvas in full screen */
+            }
+            .score-board {
+                font-size: 1.2rem;
+                padding: 10px 15px;
+            }
+            #help-icon {
+                top: 15px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+            }
+            #fullscreen-btn {
+                display: block; /* Show fullscreen button on mobile */
+            }
+            .mobile-controls-container {
+                display: block; /* Show mobile controls container */
+            }
+            .overlay-start {
+                padding: 0;
+            }
+            .overlay-card {
+                padding-bottom: 30px; /* Adjust padding for mobile layout */
+            }
+            .message-box {
+                font-size: 1.2rem;
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div id="help-icon"></div>
+    <div id="fullscreen-btn">Go Fullscreen</div>
+
 <div id="help-overlay">
   <div id="help-content">
     <h2>How to Play</h2>
@@ -262,17 +340,15 @@
         Knock down the can to score points.<br>
         Avoid getting caught by the NPC.<br>
         Press P to pause and R to restart.<br>
-        Mobile: Use on-screen controls.</p>
+        Mobile: Use on-screen joystick and throw button.</p>
     <button id="close-help">Close</button>
   </div>
 </div>
     <div class="game-wrap">
-        <!-- Moved h1 inside startOverlay -->
         <div class="score-board">Score: <span id="scoreValue">0</span></div>
         <canvas id="gameCanvas"></canvas>
 
         <div id="messageBox" class="message-box"></div>
-
 
         <div id="startOverlay" class="overlay-start">
             <div class="overlay-card">
@@ -282,18 +358,11 @@
             </div>
         </div>
 
-        <div class="mobile-controls" id="mobileControls">
-            <div style="display:flex;gap:6px;align-items:center;">
-                <div class="touch-btn" id="upBtn">▲</div>
+        <div class="mobile-controls-container" id="mobileControlsContainer">
+            <div class="joystick-area" id="joystickArea">
+                <div class="joystick-thumb" id="joystickThumb"></div>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-                <div class="touch-btn" id="leftBtn">◀</div>
-                <div class="touch-btn" id="downBtn">▼</div>
-                <div class="touch-btn" id="rightBtn">▶</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-                <div class="touch-btn" id="throwBtn">🎯</div>
-            </div>
+            <div id="mobile-throw-btn">🎯</div>
         </div>
     </div>
 
@@ -304,7 +373,7 @@
     const config = {
         canvasWidth: 500,
         canvasHeight: 650,
-        playerSpeed: 2.2,
+        playerSpeed: 2.0,
         npcBaseSpeed: 1.0,
         slipperSpeed: 10,
         pickupDistanceOffset: 10,
@@ -313,13 +382,14 @@
         shakeDuration: 10,
         particleLifetime: 120, // Increased frames for particle to live and fade
         particleSpeed: 1.5,   // Increased pixels per frame upwards
+        joystickMaxDist: 30, // Max distance joystick thumb can move from center
     };
 
     // Game state
     const state = {
         score: 0,
         isGameOver: false,
-        isPaused: false,
+        isPaused: false, // Default to not paused
         messageTimer: 0,
         canWasHitThisRound: false,
         playerCarriedSlipperBack: false,
@@ -327,15 +397,26 @@
         shakeX: 0,
         shakeY: 0,
         scoreParticles: [], // Array to hold score particle objects
+        joystickActive: false,
+        joystickStartX: 0,
+        joystickStartY: 0,
+        joystickCurrentX: 0,
+        joystickCurrentY: 0,
     };
 
     // DOM
+    const gameWrapper = document.querySelector('.game-wrap'); // Get the game wrapper
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreValueElement = document.getElementById('scoreValue');
     const messageBox = document.getElementById('messageBox');
     const startOverlay = document.getElementById('startOverlay');
     const startBtn = document.getElementById('startBtn');
+    const joystickArea = document.getElementById('joystickArea');
+    const joystickThumb = document.getElementById('joystickThumb');
+    const mobileThrowBtn = document.getElementById('mobile-throw-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
 
     // Resize canvas
     canvas.width = config.canvasWidth;
@@ -438,7 +519,7 @@
     function showMessage(html, duration=180){
         messageBox.innerHTML = html;
         messageBox.style.display = 'block';
-        state.messageTimer = duration;
+        state.messageTimer = duration; // Only set timer if not game over
     }
     function hideMessage(){ messageBox.style.display = 'none'; }
 
@@ -461,10 +542,10 @@
 
 
     // =====================
-    // Input
+    // Input (Keyboard & Mobile Touch)
     // =====================
     window.addEventListener('keydown', (e)=>{
-        if(state.isGameOver) return;
+        if(state.isGameOver || state.isPaused) return; // Prevent input if game over or paused
         const key = e.key.toLowerCase();
         if(key==='w' || key==='arrowup') { keys.up=true; player.dir = 1; player.moving=true; }
         else if(key==='s' || key==='arrowdown'){ keys.down=true; player.dir = 0; player.moving=true; }
@@ -482,6 +563,7 @@
     });
 
     window.addEventListener('keyup',(e)=>{
+        if(state.isGameOver || state.isPaused) return; // Prevent input if game over or paused
         const key = e.key.toLowerCase();
         if(key==='w' || key==='arrowup') keys.up=false;
         else if(key==='s' || key==='arrowdown') keys.down=false;
@@ -497,30 +579,105 @@
         }
     });
 
-    // Mobile touch handlers (simple)
-    function makeTouch(id, onStart, onEnd){
-        const el = document.getElementById(id);
-        if (!el) return;
-        let down=false;
-        el.addEventListener('touchstart',(e)=>{ e.preventDefault(); down=true; onStart(); });
-        el.addEventListener('touchend',(e)=>{ e.preventDefault(); down=false; onEnd(); });
-        el.addEventListener('mousedown',(e)=>{ e.preventDefault(); down=true; onStart(); });
-        el.addEventListener('mouseup',(e)=>{ e.preventDefault(); down=false; onEnd(); });
+    // Mobile Joystick Logic
+    joystickArea.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent default touch behavior (scrolling, zooming)
+        state.joystickActive = true;
+        const rect = joystickArea.getBoundingClientRect();
+        state.joystickStartX = rect.left + rect.width / 2;
+        state.joystickStartY = rect.top + rect.height / 2;
+        handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+    });
+
+    joystickArea.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (state.joystickActive) {
+            handleJoystickMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    });
+
+    joystickArea.addEventListener('touchend', () => {
+        state.joystickActive = false;
+        state.joystickCurrentX = 0;
+        state.joystickCurrentY = 0;
+        joystickThumb.style.transform = 'translate(-50%, -50%)'; // Reset thumb position
+        // Reset player movement state for keyboard keys too
+        keys.up = keys.down = keys.left = keys.right = false;
+        player.moving = false;
+        player.currFrame = 1;
+    });
+
+    function handleJoystickMove(touchX, touchY) {
+        let dx = touchX - state.joystickStartX;
+        let dy = touchY - state.joystickStartY;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance > config.joystickMaxDist) {
+            dx = (dx / distance) * config.joystickMaxDist;
+            dy = (dy / distance) * config.joystickMaxDist;
+        }
+
+        state.joystickCurrentX = dx;
+        state.joystickCurrentY = dy;
+
+        // Move the joystick thumb visually
+        joystickThumb.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
+
+        // Translate joystick movement to keys state
+        keys.up = dy < -5;
+        keys.down = dy > 5;
+        keys.left = dx < -5;
+        keys.right = dx > 5;
+
+        // Determine player direction based on joystick
+        if (keys.up || keys.down || keys.left || keys.right) {
+            player.moving = true;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                player.dir = dx > 0 ? 3 : 2; // Right or Left
+            } else {
+                player.dir = dy > 0 ? 0 : 1; // Down or Up
+            }
+        } else {
+            player.moving = false;
+            player.currFrame = 1;
+        }
     }
-    makeTouch('upBtn', ()=>keys.up=true, ()=>keys.up=false);
-    makeTouch('downBtn', ()=>keys.down=true, ()=>keys.down=false);
-    makeTouch('leftBtn', ()=>keys.left=true, ()=>keys.left=false);
-    makeTouch('rightBtn', ()=>keys.right=true, ()=>keys.right=false);
-    makeTouch('throwBtn', ()=>{ if(slipper.isHeld && player.y >= config.boundaryY) throwSlipperTowardCan(); }, ()=>{});
+
+
+    // Mobile Throw Button Logic
+    mobileThrowBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!state.isPaused && !state.isGameOver && slipper.isHeld && !slipper.justThrown && player.y >= config.boundaryY) {
+            throwSlipperTowardCan();
+        }
+    });
 
     // Start button
     startBtn.addEventListener('click', ()=>{ startOverlay.style.display='none'; startLoop(); });
+
+    // Fullscreen button
+    fullscreenBtn.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            if (gameWrapper.requestFullscreen) {
+                gameWrapper.requestFullscreen();
+            } else if (gameWrapper.mozRequestFullScreen) { /* Firefox */
+                gameWrapper.mozRequestFullScreen();
+            } else if (gameWrapper.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+                gameWrapper.webkitRequestFullscreen();
+            } else if (gameWrapper.msRequestFullscreen) { /* IE/Edge */
+                gameWrapper.msRequestFullscreen();
+            }
+        }
+    });
+
 
     // =====================
     // Actions
     // =====================
     function throwSlipperTowardCan(){
-        if(state.isPaused) return;
+        if(state.isPaused || state.isGameOver) return;
         if(!slipper.isHeld) return;
         slipper.isHeld = false; slipper.justThrown = true; slipper.throwCooldown = 10;
         const dx = can.x - player.x; const dy = can.y - player.y; const distance = Math.hypot(dx,dy)||1;
@@ -725,37 +882,16 @@
                     npc.dir = Math.abs(dx)>Math.abs(dy) ? (dx>0?2:1) : (dy>0?0:3);
                     if(dist > npc.width/2) { npc.x += (dx/dist)*npc.speed; npc.y += (dy/dist)*npc.speed; }
                 }
-                // Collision detection (catch: screen shake, player/slipper reset)
+                // Collision detection (catch: Game Over)
                 const tolerance = 43; // pixels
                 const currentDistToPlayer = Math.hypot(player.x - npc.x, player.y - npc.y);
                 
                 if (currentDistToPlayer < tolerance) {
-                    startShake(); // Activate screen shake
-                    showMessage('Huli! Try again!', 90); // Show "Caught!" message
-                    
-                    // Reset player position
-                    player.x = canvas.width / 2;
-                    player.y = canvas.height - 25;
-                    player.moving = false;
-
-                    // Reset slipper position and state to be held by player
-                    slipper.isHeld = true;
-                    slipper.vx = 0;
-                    slipper.vy = 0;
-                    slipper.x = player.x + 10;
-                    slipper.y = player.y - 15;
-                    slipper.justThrown = false;
-                    slipper.throwCooldown = 0;
-                    slipper.rotation = 0;
-                    slipper.rotationSpeed = 0;
-                    
-                    // Reset NPC state after catching
-                    npc.state = 'returningToOrigin'; // NPC returns to origin after catching player
-                    npc.patrolTargetX = null;
-                    npc.patrolTargetY = null;
-
-                    state.canWasHitThisRound = false; // Reset round specific flags
-                    state.playerCarriedSlipperBack = false;
+                    state.isGameOver = true; // Set game over state
+                    startShake(); // Activate screen shake for impact
+                    // Updated message for game over
+                    showMessage(`<span style="color:red; font-weight:bold; font-size: 2em; font-family: 'Press Start 2P', cursive;">Game Over!</span><br><span style="color:yellow; font-size: 1.5em; font-family: 'Press Start 2P', cursive;">${state.score}!!</span><br><br><button id="playAgainBtn">Retry</button>`, 0);
+                    document.getElementById('playAgainBtn').addEventListener('click', resetGame); // Attach listener to retry button
                 }
                 
                 // --- NPC Chase Cancellation Logic ---
@@ -763,7 +899,7 @@
                 if (slipper.isHeld && !can.isHit) {
                     // Cancel if player moves away from can by 250px or more (using the same chaseNearCanDistance)
                     if (distPlayerToCan >= config.chaseNearCanDistance) { // Now uses 250px
-                        npc.state = 'returningToOrigin'; // NEW: Go back to origin
+                        npc.state = 'returningToOrigin'; // Go back to origin
                         npc.patrolTargetX = null;
                         npc.patrolTargetY = null;
                     }
@@ -821,7 +957,7 @@
     }
 
     function updateAll(){
-        if(state.isPaused || state.isGameOver) return;
+        if(state.isPaused || state.isGameOver) return; // Only run updates if not paused or game over
         if(state.messageTimer>0){ state.messageTimer--; if(state.messageTimer===0) hideMessage(); }
 
         applyShake();
@@ -1006,10 +1142,13 @@
     const helpOverlay = document.getElementById('help-overlay');
     const closeHelp = document.getElementById('close-help');
 
+    // Updated Help Icon Event Listeners
     helpIcon.addEventListener('click', () => {
+        state.isPaused = true; // Pause the game when help is displayed
         helpOverlay.style.display = 'flex';
     });
     closeHelp.addEventListener('click', () => {
+        state.isPaused = false; // Unpause the game when help is closed
         helpOverlay.style.display = 'none';
     });
 </script>
