@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bato Lata — Refactor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        :root{
+            --bg:#2c3e50;
+            --panel:#34495e;
+            --accent:#0f3460;
+            --glass:rgba(0,0,0,0.45);
+        }
+        html,body{
+            height:100%;
+            margin:0;
+            font-family: 'Inter', sans-serif;
+            background:var(--bg); /* Reverted to original background color */
+            color:#e0e0e0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+
+        #help-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    /* Using an inline SVG for the help icon */
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.43 12.92 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.35 1.7-.92 2.25z"/></svg>') no-repeat center/cover;
+    cursor: pointer;
+    filter: drop-shadow(0px 0px 3px rgba(0,0,0,0.5)); /* Added subtle shadow */
+  }
+  #help-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 200; /* Ensure it's above other elements */
+  }
+  #help-content {
+    max-width: 500px;
+    text-align: center;
+    background: var(--panel);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  }
+  #help-overlay button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #3498db;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  #help-overlay button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+  }
+        .game-wrap{
+            position:relative;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+        }
+        h1{
+            margin:12px 0 0 0;
+            font-weight:700;
+            text-shadow:2px 2px 4px rgba(0,0,0,0.4);
+        }
+        canvas{
+            display:block;
+            border:4px solid var(--accent);
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.6);
+            /* Background is now handled by the JS code */
+            margin:16px 0;
+        }
+        .score-board{
+            position:absolute;
+            top:14px;
+            left:14px;
+            font-size:1.1rem;
+            font-weight:700;
+            background:var(--glass);
+            padding:8px 12px;
+            border-radius:8px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4); /* Added shadow */
+        }
+        .message-box{
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            background:var(--panel);
+            color:#fff;
+            padding:24px 28px;
+            border-radius:12px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.5);
+            text-align:center;
+            font-size:1rem;
+            display:none;
+            z-index:100;
+        }
+        .message-box button{
+            margin-top:12px;
+            padding:10px 16px; /* Increased padding for better touch target */
+            border-radius:10px; /* More rounded corners */
+            border:none;
+            background:#3498db;
+            color:#fff;
+            cursor:pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Button shadow */
+            transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth transition */
+        }
+        .message-box button:hover {
+            transform: translateY(-2px); /* Lift effect on hover */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4); /* Enhanced shadow on hover */
+        }
+        .instructions{
+            position:absolute;
+            right:14px;
+            top:14px;
+            background:var(--glass);
+            padding:10px 12px;border-radius:8px;font-size:0.9rem;
+        }
+        .overlay-start{
+            position:absolute;
+            inset:0;
+            display:flex;
+            flex-direction: column; /* Changed to column for vertical alignment */
+            align-items:center;
+            justify-content:center;
+            background-size: cover; /* Cover the entire area */
+            background-position: center; /* Center the image */
+            background-repeat: no-repeat; /* Do not repeat */
+            z-index:120;
+            color: #fff; /* Ensure text is visible on background image */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* Add text shadow for readability */
+            /* The image source will be set in JS */
+        }
+        .overlay-card{
+            background:rgba(0,0,0,0.6); /* Slightly darker, more transparent background */
+            padding:20px 30px;
+            border-radius:12px;
+            text-align:center;
+            box-shadow:0 8px 30px rgba(0,0,0,0.8);
+            display: flex; /* Use flexbox for internal arrangement */
+            flex-direction: column;
+            justify-content: flex-end; /* Push content to the bottom */
+            align-items: center;
+            height: 100%; /* Take full height of overlay-start */
+            width: 100%; /* Take full width of overlay-start */
+            box-sizing: border-box; /* Include padding in width/height */
+            padding-bottom: 50px; /* Add more padding at the bottom for controls */
+        }
+        .overlay-card h2{
+            font-family: 'Press Start 2P', cursive; /* Apply pixel font */
+            font-size: 2.2em; /* Larger title */
+            margin-bottom: 8px; /* Reduced margin */
+            color: #ffeb3b; /* Yellowish title */
+            text-shadow: 0 0 8px rgba(255,255,0,0.8); /* Glow effect */
+        }
+        .overlay-card p{
+            font-family: 'Press Start 2P', cursive; /* Apply pixel font */
+            font-size: 0.8em; /* Smaller, readable text */
+            line-height: 1.6;
+            max-width: 80%; /* Limit width for readability */
+            margin: 10px auto 30px auto; /* Adjust margins */
+        }
+        .overlay-card button{
+            margin-top:12px;
+            padding:10px 20px; /* Slightly larger button */
+            border-radius:10px;
+            border:none;
+            background:#2ecc71;
+            color:#fff;
+            cursor:pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Button shadow */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-family: 'Press Start 2P', cursive; /* Apply pixel font */
+            font-size: 1.1em; /* Button text size */
+        }
+        .overlay-card button:hover {
+            transform: translateY(-2px); /* Lift effect on hover */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4); /* Enhanced shadow on hover */
+        }
+        /* mobile controls (simple) */
+        .mobile-controls{
+            display:none;
+            position:absolute;
+            bottom:12px;
+            left:50%;
+            transform:translateX(-50%);
+            gap:10px;
+            z-index:140;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 90%;
+        }
+        .touch-btn{
+            width:56px;
+            height:56px;
+            border-radius:8px;
+            background:rgba(255,255,255,0.06);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.1s ease;
+            user-select: none;
+        }
+        .touch-btn:active {
+            transform: scale(0.95);
+        }
+        /* Adjust layout for mobile controls */
+        .mobile-controls > div {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        @media (max-width:720px){
+            .mobile-controls{display:flex}
+            .game-wrap {
+                transform: scale(0.9);
+            }
+        }
+        @media (max-width:480px) {
+            .game-wrap {
+                transform: scale(0.8);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="help-icon"></div>
+<div id="help-overlay">
+  <div id="help-content">
+    <h2>How to Play</h2>
+    <p>Move with WASD or Arrow Keys.<br>
+        Press SPACE to throw the slipper.<br>
+        Knock down the can to score points.<br>
+        Avoid getting caught by the NPC.<br>
+        Press P to pause and R to restart.<br>
+        Mobile: Use on-screen controls.</p>
+    <button id="close-help">Close</button>
+  </div>
+</div>
+    <div class="game-wrap">
+        <!-- Moved h1 inside startOverlay -->
+        <div class="score-board">Score: <span id="scoreValue">0</span></div>
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="messageBox" class="message-box"></div>
+
+
+        <div id="startOverlay" class="overlay-start">
+            <div class="overlay-card">
+                <h2>Bato Lata</h2>
+                <p>Move with WASD or Arrow keys. Press SPACE to throw the slipper toward the can. Bring back the slipper after hitting the can to score. Don't let the guard catch you!</p>
+                <button id="startBtn">Start Game</button>
+            </div>
+        </div>
+
+        <div class="mobile-controls" id="mobileControls">
+            <div style="display:flex;gap:6px;align-items:center;">
+                <div class="touch-btn" id="upBtn">▲</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <div class="touch-btn" id="leftBtn">◀</div>
+                <div class="touch-btn" id="downBtn">▼</div>
+                <div class="touch-btn" id="rightBtn">▶</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+                <div class="touch-btn" id="throwBtn">🎯</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // =====================
+    // Config & State
+    // =====================
+    const config = {
+        canvasWidth: 500,
+        canvasHeight: 650,
+        playerSpeed: 2.2,
+        npcBaseSpeed: 1.0,
+        slipperSpeed: 10,
+        pickupDistanceOffset: 10,
+        boundaryY: 550, // equivalent to CANVAS_HEIGHT - 100
+        chaseNearCanDistance: 250, // Player must be this close to the can to trigger/cancel chase BEFORE throwing
+        shakeDuration: 10,
+        particleLifetime: 120, // Increased frames for particle to live and fade
+        particleSpeed: 1.5,   // Increased pixels per frame upwards
+    };
+
+    // Game state
+    const state = {
+        score: 0,
+        isGameOver: false,
+        isPaused: false,
+        messageTimer: 0,
+        canWasHitThisRound: false,
+        playerCarriedSlipperBack: false,
+        shakeTimer: 0,
+        shakeX: 0,
+        shakeY: 0,
+        scoreParticles: [], // Array to hold score particle objects
+    };
+
+    // DOM
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreValueElement = document.getElementById('scoreValue');
+    const messageBox = document.getElementById('messageBox');
+    const startOverlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startBtn');
+
+    // Resize canvas
+    canvas.width = config.canvasWidth;
+    canvas.height = config.canvasHeight;
+
+    // =====================
+    // Sprites & Entities
+    // =====================
+    const backgroundMap = new Image();
+    backgroundMap.src = 'place.png'; // This is for the in-game background
+
+    // New image for the start screen background
+    const startBackground = new Image();
+    startBackground.src = 'start.png'; // Assuming 'start.png' is in the same directory
+
+    // Set the start overlay background image when it loads
+    startBackground.onload = () => {
+        startOverlay.style.backgroundImage = `url('${startBackground.src}')`;
+    };
+
+
+    const playerSprite = new Image(); playerSprite.src = 'avatar.png';
+    const playerColumns = 3, playerRows = 3;
+    let playerFrameW = 0, playerFrameH = 0;
+
+    const npcSprite = new Image(); npcSprite.src = 'npc.png';
+    const npcColumns = 4, npcRows = 4;
+    let npcFrameW = 0, npcFrameH = 0;
+
+    // New Image objects for can and slipper
+    const canImage = new Image(); canImage.src = 'can.png';
+    const slipperImage = new Image(); slipperImage.src = 'slipper.png';
+
+
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height - 25,
+        width: 55,
+        height: 55,
+        dir: 0, // 0 down,1 up,2 left,3 right
+        moving: false,
+        currFrame: 1,
+        frameCounter:0,
+    };
+
+    const npc = {
+        x: canvas.width / 2 + 50,
+        y: 190,
+        width: 85,
+        height: 85,
+        speed: config.npcBaseSpeed,
+        state: 'idle', // 'idle', 'movingToCan', 'returningCan', 'guardingSlipper', 'chasing', 'returningToOrigin'
+        carryingCan: false,
+        originalX: canvas.width / 2 + 50,
+        originalY: 190,
+        guardRadius: 40, 
+        patrolRadius: 150, 
+        chaseReturnBuffer: 50, 
+        patrolTargetX: null,
+        patrolTargetY: null,
+        currFrame:0,
+        frameCounter:0,
+        dir: 0, // 0 down,1 left,2 right,3 up
+    };
+    
+    // You can adjust the can's starting position here.
+    const can = {
+        x: canvas.width/2,
+        y: 270,
+        size: 50,
+        image: canImage,
+        isHit: false,
+        vx:0, vy:0,
+        rotation:0,
+        rotationSpeed:0,
+        mass: 1.5,
+        originalX: canvas.width/2,
+        originalY: 270
+    };
+
+    const slipper = {
+        x: player.x + 10,
+        y: player.y - 15,
+        size: 40,
+        image: slipperImage,
+        isHeld: true,
+        speed: config.slipperSpeed,
+        vx:0, vy:0,
+        justThrown:false,
+        throwCooldown:0,
+        rotation: 0,
+        rotationSpeed: 0,
+    };
+
+    const keys = { up:false, down:false, left:false, right:false, space:false };
+
+    // =====================
+    // Helpers
+    // =====================
+    function showMessage(html, duration=180){
+        messageBox.innerHTML = html;
+        messageBox.style.display = 'block';
+        state.messageTimer = duration;
+    }
+    function hideMessage(){ messageBox.style.display = 'none'; }
+
+    function startShake(duration=config.shakeDuration){ state.shakeTimer = duration; }
+
+    function applyShake(){
+        if(state.shakeTimer>0){
+            state.shakeTimer--;
+            // small random shake
+            state.shakeX = (Math.random()-0.5)*6;
+            state.shakeY = (Math.random()-0.5)*6;
+        } else { state.shakeX=0; state.shakeY=0; }
+    }
+
+    // =====================
+    // Initialization after sprite load
+    // =====================
+    playerSprite.onload = ()=>{ playerFrameW = playerSprite.width / playerColumns; playerFrameH = playerSprite.height / playerRows; };
+    npcSprite.onload = ()=>{ npcFrameW = npcSprite.width / npcColumns; npcFrameH = npcSprite.height / npcRows; };
+
+
+    // =====================
+    // Input
+    // =====================
+    window.addEventListener('keydown', (e)=>{
+        if(state.isGameOver) return;
+        const key = e.key.toLowerCase();
+        if(key==='w' || key==='arrowup') { keys.up=true; player.dir = 1; player.moving=true; }
+        else if(key==='s' || key==='arrowdown'){ keys.down=true; player.dir = 0; player.moving=true; }
+        else if(key==='a' || key==='arrowleft'){ keys.left=true; player.dir = 2; player.moving=true; }
+        else if(key==='d' || key==='arrowright'){ keys.right=true; player.dir = 3; player.moving=true; }
+        else if(key===' '){
+            if(!keys.space && slipper.isHeld && !slipper.justThrown && player.y >= config.boundaryY){
+                keys.space = true; throwSlipperTowardCan();
+            }
+        } else if(key==='p'){
+            togglePause();
+        } else if(key==='r'){
+            resetGame();
+        }
+    });
+
+    window.addEventListener('keyup',(e)=>{
+        const key = e.key.toLowerCase();
+        if(key==='w' || key==='arrowup') keys.up=false;
+        else if(key==='s' || key==='arrowdown') keys.down=false;
+        else if(key==='a' || key==='arrowleft') keys.left=false;
+        else if(key==='d' || key==='arrowright') keys.right=false;
+        else if(key===' ') { keys.space=false; }
+
+        player.moving = keys.up||keys.down||keys.left||keys.right;
+        if(!player.moving) player.currFrame = 1;
+        // Update facing if still moving
+        if(player.moving){
+            if(keys.left) player.dir = 2; else if(keys.right) player.dir = 3; else if(keys.up) player.dir = 1; else if(keys.down) player.dir = 0;
+        }
+    });
+
+    // Mobile touch handlers (simple)
+    function makeTouch(id, onStart, onEnd){
+        const el = document.getElementById(id);
+        if (!el) return;
+        let down=false;
+        el.addEventListener('touchstart',(e)=>{ e.preventDefault(); down=true; onStart(); });
+        el.addEventListener('touchend',(e)=>{ e.preventDefault(); down=false; onEnd(); });
+        el.addEventListener('mousedown',(e)=>{ e.preventDefault(); down=true; onStart(); });
+        el.addEventListener('mouseup',(e)=>{ e.preventDefault(); down=false; onEnd(); });
+    }
+    makeTouch('upBtn', ()=>keys.up=true, ()=>keys.up=false);
+    makeTouch('downBtn', ()=>keys.down=true, ()=>keys.down=false);
+    makeTouch('leftBtn', ()=>keys.left=true, ()=>keys.left=false);
+    makeTouch('rightBtn', ()=>keys.right=true, ()=>keys.right=false);
+    makeTouch('throwBtn', ()=>{ if(slipper.isHeld && player.y >= config.boundaryY) throwSlipperTowardCan(); }, ()=>{});
+
+    // Start button
+    startBtn.addEventListener('click', ()=>{ startOverlay.style.display='none'; startLoop(); });
+
+    // =====================
+    // Actions
+    // =====================
+    function throwSlipperTowardCan(){
+        if(state.isPaused) return;
+        if(!slipper.isHeld) return;
+        slipper.isHeld = false; slipper.justThrown = true; slipper.throwCooldown = 10;
+        const dx = can.x - player.x; const dy = can.y - player.y; const distance = Math.hypot(dx,dy)||1;
+        slipper.vx = (dx/distance)*slipper.speed; slipper.vy = (dy/distance)*slipper.speed;
+        slipper.x += slipper.vx * 0.5; slipper.y += slipper.vy * 0.5;
+        // Add a random spin to the slipper
+        slipper.rotationSpeed = (Math.random() - 0.5) * 0.5;
+    }
+
+    function togglePause(){ state.isPaused = !state.isPaused; if(state.isPaused) showMessage('Paused'); else hideMessage(); }
+
+    // =====================
+    // Update split into smaller functions
+    // =====================
+    function updatePlayerMovement(){
+        if(player.moving){
+            let vx=0, vy=0;
+            if(keys.up) vy -=1;
+            if(keys.down) vy +=1;
+            if(keys.left) vx -=1;
+            if(keys.right) vx +=1;
+            const mag = Math.hypot(vx,vy);
+            if(mag>0){ player.x += (vx/mag)*config.playerSpeed; player.y += (vy/mag)*config.playerSpeed; }
+        }
+        // keep inside
+        player.x = Math.max(player.width/2, Math.min(canvas.width - player.width/2, player.x));
+        player.y = Math.max(player.height/2, Math.min(canvas.height - player.height/2, player.y));
+
+        // animation
+        if(player.moving){ player.frameCounter++; if(player.frameCounter%10===0){ player.currFrame = (player.currFrame+1) % playerColumns; } }
+        else player.currFrame = 1;
+    }
+
+    function updateSlipper(){
+        if(slipper.throwCooldown>0) slipper.throwCooldown--;
+        else slipper.justThrown = false;
+
+        if(slipper.isHeld){ slipper.x = player.x + 10; slipper.y = player.y - 15; }
+        else {
+            slipper.x += slipper.vx; slipper.y += slipper.vy;
+            slipper.vx *= 0.98; slipper.vy *= 0.98;
+            slipper.rotation += slipper.rotationSpeed;
+            slipper.rotationSpeed *= 0.98;
+
+            // wall bounce
+            if(slipper.x - slipper.size/2 < 0 || slipper.x + slipper.size/2 > canvas.width){ slipper.vx *= -0.7; slipper.x = Math.max(slipper.size/2, Math.min(canvas.width - slipper.size/2, slipper.x)); }
+            if(slipper.y - slipper.size/2 < 0 || slipper.y + slipper.size/2 > canvas.height){ slipper.vy *= -0.7; slipper.y = Math.max(slipper.size/2, Math.min(canvas.height - slipper.size/2, slipper.y)); }
+
+            // collision with can
+            const dx = slipper.x - can.x; const dy = slipper.y - can.y; const dist = Math.hypot(dx,dy);
+            const minDist = slipper.size/2 + can.size/2;
+            if(dist < minDist && !can.isHit){
+                can.isHit = true; state.canWasHitThisRound = true; startShake(8);
+                const nx = dx/dist; const ny = dy/dist;
+                const relVx = slipper.vx - can.vx; const relVy = slipper.vy - can.vy;
+                const impulse = 2 * (relVx*nx + relVy*ny) / (1/slipper.size + 1/can.mass);
+                slipper.vx -= impulse * nx / slipper.size; 
+                slipper.vy -= impulse * ny / slipper.size; 
+                can.vx += impulse * nx / can.mass; can.vy += impulse * ny / can.mass;
+                const overlap = minDist - dist + 1; slipper.x += nx*overlap; slipper.y += ny*overlap;
+                npc.state = 'movingToCan'; // NPC starts moving towards the can's current position
+            }
+            if(Math.abs(slipper.vx) < 0.2 && Math.abs(slipper.vy) < 0.2){ slipper.vx=0; slipper.vy=0; }
+        }
+
+        // pickup by player
+        if(!slipper.isHeld && !slipper.justThrown){
+            const dxp = player.x - slipper.x; const dyp = player.y - slipper.y; const d = Math.hypot(dxp,dyp);
+            const pickupRadius = player.width/2 + slipper.size/2 + config.pickupDistanceOffset;
+            if(d < pickupRadius){
+                slipper.isHeld = true; slipper.vx=0; slipper.vy=0;
+                slipper.rotation = 0; slipper.rotationSpeed = 0;
+                if(state.canWasHitThisRound) state.playerCarriedSlipperBack = true;
+            }
+        }
+    }
+
+    function updateCanPhysics(){
+        if(can.isHit){
+            can.x += can.vx; can.y += can.vy; can.rotation += can.rotationSpeed;
+            can.vx *= 0.95; can.vy *= 0.95; can.rotationSpeed *= 0.95;
+            if(can.x - can.size/2 < 0 || can.x + can.size/2 > canvas.width){ can.vx *= -0.5; can.x = Math.max(can.size/2, Math.min(canvas.width - can.size/2, can.x)); }
+            if(can.y - can.size/2 < 0 || can.y + can.size/2 > canvas.height){ can.vy *= -0.5; can.y = Math.max(can.size/2, Math.min(canvas.height - can.size/2, can.y)); }
+            if(Math.abs(can.vx)<0.1 && Math.abs(can.vy)<0.1 && Math.abs(can.rotationSpeed)<0.01){ can.vx=0; can.vy=0; can.rotationSpeed=0; }
+        }
+
+        // scoring: when player returns slipper to safe zone after hitting can
+        if(state.playerCarriedSlipperBack && player.y >= config.boundaryY){
+            state.score++; 
+            scoreValueElement.textContent = state.score; 
+            state.canWasHitThisRound = false; 
+            state.playerCarriedSlipperBack = false;
+            
+            // Add a score particle effect
+            state.scoreParticles.push({
+                x: player.x,
+                y: player.y,
+                alpha: 1.0,
+                life: config.particleLifetime
+            });
+
+            // Decrease patrol radius and chase return buffer by 5 for every 2 points scored
+            if (state.score % 2 === 0) {
+                npc.patrolRadius = Math.max(20, npc.patrolRadius - 5); // Minimum 20px
+                npc.chaseReturnBuffer = Math.max(10, npc.chaseReturnBuffer - 5); // Minimum 10px
+            }
+
+            // reset can & npc
+            can.x = can.originalX; can.y = can.originalY; can.isHit=false; can.vx=0; can.vy=0; can.rotation=0; can.rotationSpeed=0;
+            npc.x = npc.originalX; npc.y = npc.originalY; npc.state='idle'; npc.carryingCan=false; npc.speed = config.npcBaseSpeed + Math.floor(state.score/3)*0.3;
+        }
+    }
+
+    function updateNPCBehavior(){
+        let npcMoving=false;
+        const distPlayerToCan = Math.hypot(player.x - can.x, player.y - can.y);
+        const distPlayerToSlipper = Math.hypot(player.x - slipper.x, player.y - slipper.y);
+
+        // --- NPC Chase Activation Logic ---
+        // Trigger chase if player gets too close to the can BEFORE throwing (slipper is held, can is not hit)
+        if (slipper.isHeld && !can.isHit && distPlayerToCan < config.chaseNearCanDistance && npc.state !== 'chasing') {
+            npc.state = 'chasing';
+            npc.patrolTargetX = null; // Reset patrol target
+            npc.patrolTargetY = null;
+        }
+        // Trigger chase if player approaches the slipper AFTER throwing (slipper is not held, NPC is guarding slipper)
+        else if (!slipper.isHeld && npc.state === 'guardingSlipper' && distPlayerToSlipper < npc.guardRadius) {
+            npc.state = 'chasing';
+            npc.patrolTargetX = null; // Reset patrol target
+            npc.patrolTargetY = null;
+        }
+
+        // Update NPC direction to face player when idle
+        if(npc.state === 'idle') {
+            const dx = player.x - npc.x;
+            const dy = player.y - npc.y;
+            npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : (dy > 0 ? 0 : 3);
+        }
+        
+        switch(npc.state){
+            case 'movingToCan':
+                npcMoving = true;
+                {
+                    const dx = can.x - npc.x; // Target is the can's current (hit) position
+                    const dy = can.y - npc.y;
+                    const dist = Math.hypot(dx,dy)||1;
+                    npc.dir = Math.abs(dx)>Math.abs(dy) ? (dx>0?2:1) : (dy>0?0:3);
+                    if(dist > 5){ // Move until close to pick up
+                        npc.x += (dx/dist)*npc.speed;
+                        npc.y += (dy/dist)*npc.speed;
+                    } else {
+                        npc.carryingCan = true; // NPC picks up the can
+                        npc.state = 'returningCan'; // Transition to returning state
+                    }
+                }
+                break;
+            case 'returningCan':
+                npcMoving = true;
+                {
+                    const dx = can.originalX - npc.x; // NPC targets the can's ORIGINAL spot
+                    const dy = can.originalY - npc.y; // NPC targets the can's ORIGINAL spot
+                    const dist = Math.hypot(dx, dy) || 1; 
+
+                    npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : (dy > 0 ? 0 : 3);
+
+                    // If NPC is very close to the original position, snap the can and transition state
+                    if(dist < 5){ 
+                        can.x = can.originalX; // Snap can to the exact spot
+                        can.y = can.originalY;
+                        can.isHit = false;
+                        can.rotation = 0;
+                        npc.carryingCan = false;
+                        npc.state = 'guardingSlipper'; // Immediately transition to guarding
+                    } else {
+                        npc.x += (dx/dist)*npc.speed;
+                        npc.y += (dy/dist)*npc.speed;
+                        can.x = npc.x; // Can visually follows NPC during movement
+                        can.y = npc.y;
+                    }
+                }
+                break;
+            case 'guardingSlipper':
+                npcMoving = true;
+                if(npc.patrolTargetX===null || npc.patrolTargetY===null){
+                    const angle = Math.random()*Math.PI*2; 
+                    // Use the dynamically adjusted patrolRadius
+                    const distance = Math.random()*npc.patrolRadius;
+                    npc.patrolTargetX = slipper.x + Math.cos(angle)*distance; 
+                    npc.patrolTargetY = slipper.y + Math.sin(angle)*distance;
+                }
+                {
+                    const dx = npc.patrolTargetX - npc.x; const dy = npc.patrolTargetY - npc.y; const dist = Math.hypot(dx,dy)||1;
+                    npc.dir = Math.abs(dx)>Math.abs(dy) ? (dx>0?2:1) : (dy>0?0:3);
+                    if(dist > 5){ npc.x += (dx/dist)*npc.speed; npc.y += (dy/dist)*npc.speed; }
+                    else { npc.patrolTargetX=null; npc.patrolTargetY=null; }
+                }
+                break; // No need for chase activation here, handled above
+            case 'chasing':
+                npcMoving = true;
+                {
+                    const dx = player.x - npc.x; const dy = player.y - npc.y; const dist = Math.hypot(dx,dy)||1;
+                    npc.dir = Math.abs(dx)>Math.abs(dy) ? (dx>0?2:1) : (dy>0?0:3);
+                    if(dist > npc.width/2) { npc.x += (dx/dist)*npc.speed; npc.y += (dy/dist)*npc.speed; }
+                }
+                // Collision detection (catch: screen shake, player/slipper reset)
+                const tolerance = 43; // pixels
+                const currentDistToPlayer = Math.hypot(player.x - npc.x, player.y - npc.y);
+                
+                if (currentDistToPlayer < tolerance) {
+                    startShake(); // Activate screen shake
+                    showMessage('Huli! Try again!', 90); // Show "Caught!" message
+                    
+                    // Reset player position
+                    player.x = canvas.width / 2;
+                    player.y = canvas.height - 25;
+                    player.moving = false;
+
+                    // Reset slipper position and state to be held by player
+                    slipper.isHeld = true;
+                    slipper.vx = 0;
+                    slipper.vy = 0;
+                    slipper.x = player.x + 10;
+                    slipper.y = player.y - 15;
+                    slipper.justThrown = false;
+                    slipper.throwCooldown = 0;
+                    slipper.rotation = 0;
+                    slipper.rotationSpeed = 0;
+                    
+                    // Reset NPC state after catching
+                    npc.state = 'returningToOrigin'; // NPC returns to origin after catching player
+                    npc.patrolTargetX = null;
+                    npc.patrolTargetY = null;
+
+                    state.canWasHitThisRound = false; // Reset round specific flags
+                    state.playerCarriedSlipperBack = false;
+                }
+                
+                // --- NPC Chase Cancellation Logic ---
+                // Scenario 1: Player has the slipper (before throwing) and moves away from can area
+                if (slipper.isHeld && !can.isHit) {
+                    // Cancel if player moves away from can by 250px or more (using the same chaseNearCanDistance)
+                    if (distPlayerToCan >= config.chaseNearCanDistance) { // Now uses 250px
+                        npc.state = 'returningToOrigin'; // NEW: Go back to origin
+                        npc.patrolTargetX = null;
+                        npc.patrolTargetY = null;
+                    }
+                }
+                // Scenario 2: Slipper is not held (after throwing) and player leads NPC far from slipper
+                else if (!slipper.isHeld) {
+                    // Cancel if player leads NPC far from slipper
+                    if (distPlayerToSlipper > npc.guardRadius + npc.chaseReturnBuffer) {
+                        npc.state = 'guardingSlipper'; 
+                        npc.patrolTargetX = null; 
+                        npc.patrolTargetY = null; 
+                    }
+                }
+                break;
+            case 'returningToOrigin': // NPC moves back to its original position
+                npcMoving = true;
+                {
+                    const dx = npc.originalX - npc.x;
+                    const dy = npc.originalY - npc.y;
+                    const dist = Math.hypot(dx, dy) || 1;
+
+                    npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : (dy > 0 ? 0 : 3);
+
+                    if (dist > 5) { // Move until close to origin
+                        npc.x += (dx / dist) * npc.speed;
+                        npc.y += (dy / dist) * npc.speed;
+                    } else {
+                        // Snap to original position and go idle
+                        npc.x = npc.originalX;
+                        npc.y = npc.originalY;
+                        npc.state = 'idle';
+                        npc.patrolTargetX = null;
+                        npc.patrolTargetY = null;
+                    }
+                }
+                break;
+        }
+
+        // npc animation
+        if(npcMoving){ npc.frameCounter++; if(npc.frameCounter%15===0) npc.currFrame = (npc.currFrame+1) % npcColumns; }
+        else npc.currFrame = 0;
+    }
+
+    function updateAnimations(){
+        // Update score particles
+        for (let i = state.scoreParticles.length - 1; i >= 0; i--) {
+            const particle = state.scoreParticles[i];
+            particle.y -= config.particleSpeed; // Move upwards
+            particle.alpha -= 1 / config.particleLifetime; // Fade out
+
+            if (particle.alpha <= 0) {
+                state.scoreParticles.splice(i, 1); // Remove if fully faded
+            }
+        }
+    }
+
+    function updateAll(){
+        if(state.isPaused || state.isGameOver) return;
+        if(state.messageTimer>0){ state.messageTimer--; if(state.messageTimer===0) hideMessage(); }
+
+        applyShake();
+
+        updatePlayerMovement();
+        updateSlipper();
+        updateCanPhysics();
+        updateNPCBehavior();
+        updateAnimations();
+    }
+
+    // =====================
+    // Drawing
+    // =====================
+    function drawBackground(){
+        if (backgroundMap.complete) {
+            ctx.drawImage(backgroundMap, 0, 0, canvas.width, canvas.height);
+        } else {
+            // Fallback color if the image hasn't loaded yet
+            ctx.fillStyle='forestgreen';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+    }
+    function drawBoundary(){ ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,config.boundaryY); ctx.lineTo(config.canvasWidth, config.boundaryY); ctx.stroke(); }
+    
+    function drawCan(){
+        // Only draw the can independently if the NPC is not currently carrying it
+        if(!npc.carryingCan){
+            if (can.image.complete) {
+                ctx.save();
+                ctx.translate(can.x, can.y);
+                ctx.rotate(can.rotation);
+                // Draw the image centered
+                ctx.drawImage(can.image, -can.size/2, -can.size/2, can.size, can.size);
+                ctx.restore();
+            } else {
+                // Fallback drawing if image not loaded
+                ctx.save(); ctx.translate(can.x, can.y); ctx.rotate(can.rotation);
+                ctx.fillStyle = 'gray'; ctx.fillRect(-can.size/2, -can.size/2, can.size, can.size);
+                ctx.restore();
+            }
+        }
+    }
+
+    function drawSlipper(){
+        if (slipper.image.complete) {
+            ctx.save();
+            ctx.translate(slipper.x, slipper.y);
+            ctx.rotate(slipper.rotation);
+            // Draw the image centered
+            ctx.drawImage(slipper.image, -slipper.size/2, -slipper.size/2, slipper.size, slipper.size);
+            ctx.restore();
+        } else {
+            // Fallback drawing if image not loaded
+            ctx.save(); ctx.translate(slipper.x, slipper.y); ctx.rotate(slipper.rotation);
+            ctx.fillStyle = 'brown'; ctx.fillRect(-slipper.size/2, -slipper.size/2, slipper.size, slipper.size);
+            ctx.restore();
+        }
+    }
+
+    function drawNPC(){
+        if(!npcSprite.complete) return;
+        const scale=1;
+        const sw = npcFrameW, sh = npcFrameH;
+        const dw = npc.width, dh = npc.height;
+        ctx.save();
+        ctx.drawImage(npcSprite, npc.currFrame*npcFrameW, (npc.dir||0)*npcFrameH, npcFrameW, npcFrameH, npc.x - dw/2, npc.y - dh/2, dw, dh);
+        
+        // Draw the can only if NPC is carrying it
+        if(npc.carryingCan){
+            if (can.image.complete) {
+                ctx.save();
+                ctx.translate(npc.x, npc.y - 30); // Position above NPC head
+                ctx.rotate(can.rotation);
+                ctx.drawImage(can.image, -can.size/2, -can.size/2, can.size, can.size);
+                ctx.restore();
+            } else {
+                // Fallback if can image not loaded
+                ctx.save(); ctx.translate(npc.x, npc.y-30); ctx.rotate(can.rotation);
+                ctx.fillStyle = 'gray'; ctx.fillRect(-can.size/2, -can.size/2, can.size, can.size);
+                ctx.restore();
+            }
+        }
+        ctx.restore();
+    }
+
+    function drawPlayer(){
+        if(!playerSprite.complete) return;
+        const row = (player.dir===2||player.dir===3)?2:player.dir;
+        const flip = player.dir===3;
+        const frame = player.moving ? player.currFrame : 1;
+        const sx = Math.floor(frame*playerFrameW);
+        const sy = Math.floor(row*playerFrameH);
+        const sw = Math.floor(playerFrameW-1);
+        const sh = Math.floor(playerFrameH);
+        ctx.save();
+        if(flip){
+            ctx.scale(-1,1);
+            ctx.drawImage(playerSprite, sx, sy, sw, sh, -player.x - player.width/2, player.y - player.height/2, player.width, player.height);
+        } else {
+            ctx.drawImage(playerSprite, sx, sy, sw, sh, player.x - player.width/2, player.y - player.height/2, player.width, player.height);
+        }
+        ctx.restore();
+    }
+
+    function drawScoreParticles(){
+        ctx.save();
+        ctx.font = 'bold 36px "Press Start 2P"'; // Apply pixel font to particles
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 15; // Increased glow effect
+        ctx.shadowOffsetX = 0; // Ensure shadow is centered
+        ctx.shadowOffsetY = 0; // Ensure shadow is centered
+
+        state.scoreParticles.forEach(particle => {
+            ctx.globalAlpha = particle.alpha;
+            // Changed color to yellow
+            ctx.fillStyle = `rgba(255, 255, 0, ${particle.alpha})`; // Yellow color for +1
+            ctx.shadowColor = `rgba(255, 255, 0, ${particle.alpha})`; // Yellow glow
+            ctx.fillText('+1', particle.x, particle.y);
+        });
+        ctx.restore();
+    }
+
+
+    function drawAll(){
+        // apply screen shake offset
+        ctx.save(); ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.translate(state.shakeX, state.shakeY);
+        drawBackground(); drawBoundary(); drawNPC(); drawCan(); drawSlipper(); drawPlayer();
+        drawScoreParticles(); // Draw particles after everything else
+        ctx.restore();
+    }
+
+    // =====================
+    // Game loop
+    // =====================
+    let loopId = null;
+    function loop(){ updateAll(); drawAll(); loopId = requestAnimationFrame(loop); }
+    function startLoop(){ if(loopId) cancelAnimationFrame(loopId); loop(); }
+
+    function resetGame(){
+        state.isGameOver=false; state.isPaused=false; state.score=0; scoreValueElement.textContent = 0; hideMessage();
+        // reset keys
+        keys.up=false; keys.down=false; keys.left=false; keys.right=false; keys.space=false;
+        // reset positions
+        player.x = canvas.width/2; player.y = canvas.height - 25; player.moving=false; player.currFrame=1;
+        slipper.isHeld = true; slipper.vx=0; slipper.vy=0; slipper.x = player.x + 10; slipper.y = player.y - 15; slipper.justThrown=false; slipper.throwCooldown=0;
+        slipper.rotation = 0; slipper.rotationSpeed = 0;
+        can.x = can.originalX; can.y = can.originalY; can.isHit=false; can.vx=0; can.vy=0; can.rotation=0; can.rotationSpeed=0;
+        // Reset NPC speed based on score AND set initial patrolRadius
+        npc.x = npc.originalX; npc.y = npc.originalY; npc.state='idle'; npc.carryingCan=false; 
+        npc.speed = config.npcBaseSpeed; // Reset speed
+        npc.patrolRadius = 50; // Reset patrol radius to initial value (50)
+        npc.chaseReturnBuffer = 50; // Reset chase return buffer to initial value (50)
+        state.canWasHitThisRound=false; state.playerCarriedSlipperBack=false;
+        state.scoreParticles = []; // Clear any existing particles
+        
+        // Make NPC face player on reset
+        const dx = player.x - npc.x;
+        const dy = player.y - npc.y;
+        npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : (dy > 0 ? 0 : 3);
+        
+        startOverlay.style.display='none';
+        startLoop();
+    }
+
+    // expose reset to global for console convenience
+    window.resetGame = resetGame;
+
+    // start initial loop but paused by overlay
+    function startLoopPaused(){ loopId = requestAnimationFrame(()=>{}); }
+    startLoopPaused();
+
+    // Utility: attach play again button listener if present after message show
+    const observer = new MutationObserver(()=>{ const btn = document.getElementById('playAgainBtn'); if(btn) btn.addEventListener('click', resetGame); });
+    observer.observe(messageBox, {childList:true, subtree:true});
+
+    // Start API for outside (optional)
+    window.startGame = ()=>{ startOverlay.style.display='none'; startLoop(); };
+
+    const helpIcon = document.getElementById('help-icon');
+    const helpOverlay = document.getElementById('help-overlay');
+    const closeHelp = document.getElementById('close-help');
+
+    helpIcon.addEventListener('click', () => {
+        helpOverlay.style.display = 'flex';
+    });
+    closeHelp.addEventListener('click', () => {
+        helpOverlay.style.display = 'none';
+    });
+</script>
+</body>
+</html>
