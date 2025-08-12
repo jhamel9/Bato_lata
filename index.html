@@ -387,6 +387,7 @@
         particleLifetime: 120, // Increased frames for particle to live and fade
         particleSpeed: 1.5,   // Increased pixels per frame upwards
         joystickMaxDist: 30, // Max distance joystick thumb can move from center
+        joystickDeadzone: 5, // Minimum distance joystick must be moved to register as active
     };
 
     // Game state
@@ -628,14 +629,14 @@
         // Move the joystick thumb visually
         joystickThumb.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
 
-        // Translate joystick movement to keys state
-        keys.up = dy < -5;
-        keys.down = dy > 5;
-        keys.left = dx < -5;
-        keys.right = dx > 5;
+        // Translate joystick movement to keys state based on direction
+        keys.up = dy < -config.joystickDeadzone;
+        keys.down = dy > config.joystickDeadzone;
+        keys.left = dx < -config.joystickDeadzone;
+        keys.right = dx > config.joystickDeadzone;
 
-        // Determine player direction based on joystick
-        if (keys.up || keys.down || keys.left || keys.right) {
+        // Determine player movement and direction based on joystick displacement
+        if (distance > config.joystickDeadzone) {
             player.moving = true;
             if (Math.abs(dx) > Math.abs(dy)) {
                 player.dir = dx > 0 ? 3 : 2; // Right or Left
@@ -644,7 +645,9 @@
             }
         } else {
             player.moving = false;
-            player.currFrame = 1;
+            player.currFrame = 1; // Stop animation
+            // Also ensure keys are reset if not moving significantly
+            keys.up = keys.down = keys.left = keys.right = false;
         }
     }
 
