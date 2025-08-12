@@ -214,7 +214,7 @@
 
         /* Mobile Controls - Fullscreen, Joystick, Throw Button */
         .mobile-controls-container {
-            display: none; /* Hidden by default, shown on mobile */
+            display: none; /* Hidden by default, shown/hidden by JS */
             position: absolute;
             bottom: 15px;
             left: 15px;
@@ -257,8 +257,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            color: rgba(255, 255, 255, 0.8);
+            /* Using slipper.png as background image */
+            background-image: url('slipper.png');
+            background-size: 60%; /* Adjust size of slipper inside button */
+            background-position: center;
+            background-repeat: no-repeat;
+            font-size: 0; /* Hide any default text/emoji */
+            color: transparent; /* Hide any default text/emoji */
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             user-select: none;
             cursor: pointer;
@@ -312,9 +317,8 @@
             #fullscreen-btn {
                 display: block; /* Show fullscreen button on mobile */
             }
-            .mobile-controls-container {
-                display: block; /* Show mobile controls container */
-            }
+            /* The mobile-controls-container's display is now controlled by JS, not this media query */
+            /* .mobile-controls-container { display: block; } */
             .overlay-start {
                 padding: 0;
             }
@@ -362,7 +366,7 @@
             <div class="joystick-area" id="joystickArea">
                 <div class="joystick-thumb" id="joystickThumb"></div>
             </div>
-            <div id="mobile-throw-btn">🎯</div>
+            <div id="mobile-throw-btn"></div>
         </div>
     </div>
 
@@ -373,8 +377,8 @@
     const config = {
         canvasWidth: 500,
         canvasHeight: 650,
-        playerSpeed: 2.0,
-        npcBaseSpeed: 1.0,
+        playerSpeed: 1.5,
+        npcBaseSpeed: 0.9,
         slipperSpeed: 10,
         pickupDistanceOffset: 10,
         boundaryY: 550, // equivalent to CANVAS_HEIGHT - 100
@@ -412,6 +416,7 @@
     const messageBox = document.getElementById('messageBox');
     const startOverlay = document.getElementById('startOverlay');
     const startBtn = document.getElementById('startBtn');
+    const mobileControlsContainer = document.getElementById('mobileControlsContainer'); // Get the container
     const joystickArea = document.getElementById('joystickArea');
     const joystickThumb = document.getElementById('joystickThumb');
     const mobileThrowBtn = document.getElementById('mobile-throw-btn');
@@ -558,7 +563,7 @@
         } else if(key==='p'){
             togglePause();
         } else if(key==='r'){
-            resetGame();
+            resetGame(); // 'R' now goes to start screen
         }
     });
 
@@ -653,7 +658,15 @@
     });
 
     // Start button
-    startBtn.addEventListener('click', ()=>{ startOverlay.style.display='none'; startLoop(); });
+    startBtn.addEventListener('click', ()=>{
+        startOverlay.style.display='none';
+        // Only show mobile controls if on a mobile device (or small screen based on media query)
+        // Check if the current window matches the mobile breakpoint for display
+        if (window.matchMedia("(max-width: 768px)").matches) {
+            mobileControlsContainer.style.display = 'block';
+        }
+        startLoop();
+    });
 
     // Fullscreen button
     fullscreenBtn.addEventListener('click', () => {
@@ -1096,44 +1109,46 @@
     // =====================
     let loopId = null;
     function loop(){ updateAll(); drawAll(); loopId = requestAnimationFrame(loop); }
-    function startLoop(){ if(loopId) cancelAnimationFrame(loopId); loop(); }
+    function startLoop(){
+        if(loopId) cancelAnimationFrame(loopId);
+        loop();
+    }
 
     function resetGame(){
-        state.isGameOver=false; state.isPaused=false; state.score=0; scoreValueElement.textContent = 0; hideMessage();
-        // reset keys
-        keys.up=false; keys.down=false; keys.left=false; keys.right=false; keys.space=false;
-        // reset positions
+        state.isGameOver=false;
+        state.isPaused=true; // Game is paused on the start screen
+        state.score=0;
+        scoreValueElement.textContent = 0;
+        hideMessage(); // Hide game over message if visible
+
+        // Reset game entities (player, slipper, can, npc) to their initial positions/states
         player.x = canvas.width/2; player.y = canvas.height - 25; player.moving=false; player.currFrame=1;
         slipper.isHeld = true; slipper.vx=0; slipper.vy=0; slipper.x = player.x + 10; slipper.y = player.y - 15; slipper.justThrown=false; slipper.throwCooldown=0;
         slipper.rotation = 0; slipper.rotationSpeed = 0;
         can.x = can.originalX; can.y = can.originalY; can.isHit=false; can.vx=0; can.vy=0; can.rotation=0; can.rotationSpeed=0;
-        // Reset NPC speed based on score AND set initial patrolRadius
-        npc.x = npc.originalX; npc.y = npc.originalY; npc.state='idle'; npc.carryingCan=false; 
-        npc.speed = config.npcBaseSpeed; // Reset speed
-        npc.patrolRadius = 50; // Reset patrol radius to initial value (50)
-        npc.chaseReturnBuffer = 50; // Reset chase return buffer to initial value (50)
+        npc.x = npc.originalX; npc.y = npc.originalY; npc.state='idle'; npc.carryingCan=false;
+        npc.speed = config.npcBaseSpeed;
+        npc.patrolRadius = 50;
+        npc.chaseReturnBuffer = 50;
         state.canWasHitThisRound=false; state.playerCarriedSlipperBack=false;
-        state.scoreParticles = []; // Clear any existing particles
-        
-        // Make NPC face player on reset
+        state.scoreParticles = [];
+
+        // Make NPC face player on reset (optional, but good for consistency)
         const dx = player.x - npc.x;
         const dy = player.y - npc.y;
         npc.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 2 : 1) : (dy > 0 ? 0 : 3);
-        
-        startOverlay.style.display='none';
-        startLoop();
+
+        // Show the start overlay and hide mobile controls
+        startOverlay.style.display='flex'; // Show start overlay
+        mobileControlsContainer.style.display = 'none'; // Hide mobile controls
+
+        // Stop the game loop (if running)
+        if(loopId) cancelAnimationFrame(loopId);
+        loopId = null; // Ensure loopId is nullified
     }
 
     // expose reset to global for console convenience
     window.resetGame = resetGame;
-
-    // start initial loop but paused by overlay
-    function startLoopPaused(){ loopId = requestAnimationFrame(()=>{}); }
-    startLoopPaused();
-
-    // Utility: attach play again button listener if present after message show
-    const observer = new MutationObserver(()=>{ const btn = document.getElementById('playAgainBtn'); if(btn) btn.addEventListener('click', resetGame); });
-    observer.observe(messageBox, {childList:true, subtree:true});
 
     // Start API for outside (optional)
     window.startGame = ()=>{ startOverlay.style.display='none'; startLoop(); };
@@ -1151,6 +1166,16 @@
         state.isPaused = false; // Unpause the game when help is closed
         helpOverlay.style.display = 'none';
     });
+
+    // Initial setup when the page loads
+    window.addEventListener('load', () => {
+        // Ensure game starts paused with the start overlay visible and controls hidden
+        resetGame(); // This will set isPaused=true, show startOverlay, hide mobileControls
+    });
+
+    // Utility: attach play again button listener if present after message show
+    const observer = new MutationObserver(()=>{ const btn = document.getElementById('playAgainBtn'); if(btn) btn.addEventListener('click', resetGame); });
+    observer.observe(messageBox, {childList:true, subtree:true});
 </script>
 </body>
 </html>
